@@ -1,0 +1,330 @@
+﻿{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "AI Node Service",
+    "description": "AI 后端服务 API 文档 — TTS 文字转语音、OCR 图片文字识别",
+    "version": "1.0"
+  },
+  "servers": [
+    {
+      "url": "http://localhost:3000",
+      "description": "本地开发"
+    }
+  ],
+  "tags": [
+    { "name": "TTS", "description": "文字转语音" },
+    { "name": "OCR", "description": "图片文字识别" }
+  ],
+  "paths": {
+    "/api/tts/synthesize": {
+      "post": {
+        "operationId": "tts-synthesize",
+        "summary": "文字转语音",
+        "description": "将文本转换为 MP3 音频，使用 Edge-TTS（免费，无需 API Key）",
+        "tags": ["TTS"],
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "description": "要合成的文本及语音参数",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TtsSynthesizeRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "合成成功，返回 MP3 音频",
+            "content": {
+              "audio/mpeg": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/tts/voices": {
+      "get": {
+        "operationId": "tts-voices",
+        "summary": "获取可用语音列表",
+        "description": "获取 Edge-TTS 支持的语音列表，可通过 locale 筛选",
+        "tags": ["TTS"],
+        "parameters": [
+          {
+            "name": "locale",
+            "in": "query",
+            "required": false,
+            "description": "语言区域筛选，如 zh、en、ja",
+            "schema": {
+              "type": "string"
+            },
+            "example": "zh"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "语音列表",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TtsVoicesResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/tts/voices/zh": {
+      "get": {
+        "operationId": "tts-voices-zh",
+        "summary": "获取中文语音列表",
+        "description": "获取 Edge-TTS 支持的中文语音列表，返回中文名称和性别",
+        "tags": ["TTS"],
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "中文语音列表",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TtsZhVoicesResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/ocr/recognize": {
+      "post": {
+        "operationId": "ocr-recognize",
+        "summary": "图片文字识别",
+        "description": "上传图片，使用 Tesseract.js 识别图片中的文字（免费，无需 API Key）",
+        "tags": ["OCR"],
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "description": "图片文件和可选语言参数",
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/OcrRecognizeRequest"
+              },
+              "encoding": {
+                "file": {
+                  "contentType": "image/jpeg, image/png, image/webp, image/bmp"
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "识别成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OcrRecognizeResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "请求错误（未提供文件、格式不支持等）"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "TtsSynthesizeRequest": {
+        "type": "object",
+        "required": ["text"],
+        "properties": {
+          "text": {
+            "type": "string",
+            "description": "要转换的文本",
+            "example": "你好世界"
+          },
+          "voice": {
+            "type": "string",
+            "description": "语音名称",
+            "default": "zh-CN-XiaoxiaoNeural",
+            "example": "zh-CN-XiaoxiaoNeural"
+          },
+          "lang": {
+            "type": "string",
+            "description": "语言代码",
+            "default": "zh-CN",
+            "example": "zh-CN"
+          },
+          "rate": {
+            "type": "string",
+            "description": "语速，如 +10%、-10%、default",
+            "default": "default",
+            "example": "default"
+          },
+          "volume": {
+            "type": "string",
+            "description": "音量，如 +50%、-50%、default",
+            "default": "default",
+            "example": "default"
+          },
+          "pitch": {
+            "type": "string",
+            "description": "音调，如 +10Hz、-10Hz、default",
+            "default": "default",
+            "example": "default"
+          }
+        }
+      },
+      "TtsVoicesResponse": {
+        "type": "object",
+        "properties": {
+          "count": {
+            "type": "integer",
+            "description": "语音数量",
+            "example": 14
+          },
+          "voices": {
+            "type": "array",
+            "description": "语音列表",
+            "items": {
+              "$ref": "#/components/schemas/VoiceItem"
+            }
+          }
+        }
+      },
+      "VoiceItem": {
+        "type": "object",
+        "properties": {
+          "ShortName": {
+            "type": "string",
+            "description": "语音短名称",
+            "example": "zh-CN-XiaoxiaoNeural"
+          },
+          "Gender": {
+            "type": "string",
+            "description": "性别",
+            "enum": ["Male", "Female"],
+            "example": "Female"
+          },
+          "Locale": {
+            "type": "string",
+            "description": "语言区域",
+            "example": "zh-CN"
+          },
+          "FriendlyName": {
+            "type": "string",
+            "description": "人类可读名称",
+            "example": "Microsoft Xiaoxiao Online (Natural) - Chinese (Mainland)"
+          },
+          "VoiceTag": {
+            "type": "object",
+            "description": "语音标签",
+            "properties": {
+              "ContentCategories": { "type": "array", "items": { "type": "string" } },
+              "VoicePersonalities": { "type": "array", "items": { "type": "string" } }
+            }
+          }
+        }
+      },
+      "TtsZhVoicesResponse": {
+        "type": "object",
+        "properties": {
+          "count": {
+            "type": "integer",
+            "description": "语音数量",
+            "example": 28
+          },
+          "voices": {
+            "type": "array",
+            "description": "中文语音列表",
+            "items": {
+              "$ref": "#/components/schemas/ZhVoiceItem"
+            }
+          }
+        }
+      },
+      "ZhVoiceItem": {
+        "type": "object",
+        "properties": {
+          "ShortName": {
+            "type": "string",
+            "description": "语音短名称（调用 TTS 接口时使用）",
+            "example": "zh-CN-XiaoxiaoNeural"
+          },
+          "Name": {
+            "type": "string",
+            "description": "中文展示名称",
+            "example": "晓晓"
+          },
+          "Gender": {
+            "type": "string",
+            "description": "性别（中文）",
+            "enum": ["女", "男"],
+            "example": "女"
+          },
+          "Locale": {
+            "type": "string",
+            "description": "语言区域",
+            "example": "zh-CN"
+          },
+          "VoiceTag": {
+            "type": "object",
+            "description": "语音标签",
+            "properties": {
+              "ContentCategories": { "type": "array", "items": { "type": "string" } },
+              "VoicePersonalities": { "type": "array", "items": { "type": "string" } }
+            }
+          }
+        }
+      },
+      "OcrRecognizeRequest": {
+        "type": "object",
+        "required": ["file"],
+        "properties": {
+          "file": {
+            "type": "string",
+            "format": "binary",
+            "description": "图片文件（jpeg/png/webp/bmp，最大 10MB）"
+          },
+          "language": {
+            "type": "string",
+            "description": "OCR 语言，如 chi_sim+eng（中英）、eng、jpn",
+            "default": "chi_sim+eng",
+            "example": "chi_sim+eng"
+          }
+        }
+      },
+      "OcrRecognizeResponse": {
+        "type": "object",
+        "properties": {
+          "text": {
+            "type": "string",
+            "description": "识别出的文本",
+            "example": "你好世界"
+          },
+          "language": {
+            "type": "string",
+            "description": "使用的语言",
+            "example": "chi_sim+eng"
+          },
+          "confidence": {
+            "type": "number",
+            "description": "识别置信度（0-100）",
+            "example": 85.5
+          }
+        }
+      }
+    }
+  }
+}
